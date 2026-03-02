@@ -1,0 +1,150 @@
+# =============================================================================
+# ALB Initializer - Dummy Service para crear ALB de Kubernetes
+# =============================================================================
+# Banco: grupo1a | Namespace: grupo1a-ms
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grupo1a-ms
+  labels:
+    name: grupo1a-ms
+    bank: grupo1a
+    managed-by: kubectl
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-health-nginx-config
+  namespace: grupo1a-ms
+  labels:
+    app: api-health
+    bank: grupo1a
+    managed-by: kubectl
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      server_name _;
+
+      location /api/health {
+        access_log off;
+        return 200 'OK';
+        add_header Content-Type text/plain;
+      }
+
+      location / {
+        return 200 'ALB Initializer - grupo1a-ms';
+        add_header Content-Type text/plain;
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-health
+  namespace: grupo1a-ms
+  labels:
+    app: api-health
+    bank: grupo1a
+    managed-by: kubectl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-health
+  template:
+    metadata:
+      labels:
+        app: api-health
+        bank: grupo1a
+        managed-by: kubectl
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: api-health-nginx-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-health
+  namespace: grupo1a-ms
+  labels:
+    app: api-health
+    bank: grupo1a
+    managed-by: kubectl
+spec:
+  type: ClusterIP
+  selector:
+    app: api-health
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-health
+  namespace: grupo1a-ms
+  labels:
+    app: api-health
+    bank: grupo1a
+    managed-by: kubectl
+  annotations:
+    alb.ingress.kubernetes.io/group.name: grupo1a-shared-alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/tags: Project=Diplomado,Bank=grupo1a,ManagedBy=kubectl
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /api/health
+            pathType: Prefix
+            backend:
+              service:
+                name: api-health
+                port:
+                  number: 8080
