@@ -104,7 +104,7 @@ metadata:
   name: ultima-milla-api
   namespace: grupo1a-ms
   annotations:
-    alb.ingress.kubernetes.io/group.name: grupo1a-shared-alb
+    alb.ingress.kubernetes.io/group.name: backend-alb
     alb.ingress.kubernetes.io/scheme: internal
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health

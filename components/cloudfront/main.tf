@@ -62,14 +62,14 @@ variable "environment" {
 variable "alb_security_group_id" {
   description = "ID del Security Group del ALB — SG del LoadBalancer de Kubernetes"
   type        = string
-  default     = "sg-0c5d6fde115e1b659"
+  default     = "sg-04e5ef811f1de186d"
 }
 
 # --- Input del ALB de Kubernetes (Ingress Controller) ---
 variable "alb_arn" {
   description = "ARN del ALB interno al que CloudFront se conectará via VPC Origin"
   type        = string
-  default     = "arn:aws:elasticloadbalancing:us-east-1:200283853536:loadbalancer/app/k8s-grupo1asharedalb-66eaa314b7/0a52ecfcf03eb7c4"
+  default     = "arn:aws:elasticloadbalancing:us-east-1:200283853536:loadbalancer/app/k8s-frontendalb-4063d04f64/f37470601d7eb118"
 }
 
 variable "tags" {

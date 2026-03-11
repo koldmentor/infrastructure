@@ -110,7 +110,7 @@ variable "cluster_name" {
 variable "ingress_group_name" {
   description = "Nombre del grupo de Ingress del ALB — output del componente alb-initializer"
   type        = string
-  default     = "grupo1a-shared-alb"
+  default     = "backend-alb"
 }
 
 variable "alb_ready" {

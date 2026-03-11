@@ -127,7 +127,7 @@ metadata:
     bank: grupo1a
     managed-by: kubectl
   annotations:
-    alb.ingress.kubernetes.io/group.name: grupo1a-shared-alb
+    alb.ingress.kubernetes.io/group.name: backend-alb
     alb.ingress.kubernetes.io/scheme: internal
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/healthcheck-path: /api/health
