@@ -44,13 +44,38 @@ terraform apply
 
 ---
 
-## Paso 3 — RDS MySQL
+## Paso 3 — RDS MySQL + SNS + SQS
+
+> Pueden ejecutarse en paralelo entre sí.
+
+### RDS MySQL
 
 > Requiere outputs de: __vpc__ (`vpc_id`, `private_subnet_ids`). Puede ejecutarse en paralelo con EKS.
 > Requiere `mysql` client instalado para la creación automática de tablas.
 
 ```bash
 cd rds
+terraform init
+terraform apply
+```
+
+### SNS (Topics)
+
+> Sin dependencias de otros componentes. Los permisos IAM ya incluyen acceso a `prod-*`.
+
+```bash
+cd sns
+terraform init
+terraform apply
+```
+
+### SQS (Colas)
+
+> Sin dependencias de otros componentes. Los permisos IAM ya incluyen acceso a `prod-*`.
+> Crea automáticamente Dead Letter Queues (DLQ) para las colas que lo tengan habilitado.
+
+```bash
+cd sqs
 terraform init
 terraform apply
 ```
@@ -231,10 +256,22 @@ cd eks
 terraform destroy
 ```
 
-### Paso 3 — RDS MySQL
+### Paso 3 — RDS MySQL + SNS + SQS
+
+> Pueden destruirse en paralelo entre sí.
 
 ```bash
 cd rds
+terraform destroy
+```
+
+```bash
+cd sns
+terraform destroy
+```
+
+```bash
+cd sqs
 terraform destroy
 ```
 
@@ -258,8 +295,11 @@ terraform destroy
 
 ```ini
 vpc ──────────────────────────────────────────────────────────────┐
- ├── rds (MySQL - DBMySQLGrupo1a)                                 │
+ ├── rds (MySQL - DBMySQLGrupo1a)                                │
  │                                                                │
+sns (prod-package-events, prod-notifications)  ── sin deps        │
+sqs (prod-packages-queue + DLQ)                ── sin deps        │
+                                                                  │
 iam ──────────────┐                                               │
                   ▼                                               │
                  eks ──── lb-controller                           │

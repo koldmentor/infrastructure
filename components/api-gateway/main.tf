@@ -19,7 +19,7 @@ variable "environment" {
 variable "existing_api_gateway_id" {
   description = "ID de un API Gateway existente. Si se proporciona, se actualizará en lugar de crear uno nuevo. Dejar vacío para crear uno nuevo."
   type        = string
-  default     = "20a1r0o6ck"
+  default     = "72ysicj0e2"
 }
 
 variable "vpc_link_id" {
@@ -43,7 +43,7 @@ variable "nlb_arn" {
 variable "existing_authorizer_id" {
   description = "ID de un Authorizer existente. Si se proporciona, se usará en lugar de crear uno nuevo (y NO se crearán IAM Role, Policy ni Lambda Permission). Dejar vacío para crear uno nuevo."
   type        = string
-  default     = "3vae12"
+  default     = "66h9k6"
 }
 
 variable "authorizer_lambda_arn" {
@@ -91,15 +91,6 @@ locals {
       operationId  = "getHealth"
       enable_cors  = true
       require_auth = false
-      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
-    }
-     entrega_get = {
-      path         = "/api/entrega/v1.0.0/get"
-      method       = "GET"
-      summary      = "servicio de entrega"
-      operationId  = "getEntrega"
-      enable_cors  = true
-      require_auth = true
       lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
     }
     encrypt_post = {
@@ -156,6 +147,121 @@ locals {
       require_auth = false
       lambda_arn   = "arn:aws:lambda:us-east-1:200283853536:function:auth-server"
     }
+    # ============================================
+    # DOMINIO: Packages (Paquetes/Pedidos)
+    # ============================================
+    packages_post = {
+      path         = "/api/v1/packages"
+      method       = "POST"
+      summary      = "Registra un nuevo paquete/pedido. Publica evento en SNS."
+      operationId  = "PostCreatePackage"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    packages_get = {
+      path         = "/api/v1/packages"
+      method       = "GET"
+      summary      = "Lista paquetes con filtros opcionales (estado, id_conductor)."
+      operationId  = "GetAllPackages"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    packages_by_id_get = {
+      path         = "/api/v1/packages/{id_pedido}"
+      method       = "GET"
+      summary      = "Obtiene detalle completo de un paquete."
+      operationId  = "GetPackageById"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    packages_status_patch = {
+      path         = "/api/v1/packages/{id_pedido}/status"
+      method       = "PATCH"
+      summary      = "Actualiza el estado del paquete. Publica evento en SNS."
+      operationId  = "PatchPackageStatus"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+
+    # ============================================
+    # DOMINIO: Tracking (Seguimiento)
+    # ============================================
+    tracking_history_get = {
+      path         = "/api/v1/tracking/{id_pedido}"
+      method       = "GET"
+      summary      = "Retorna el historial completo de seguimiento del paquete."
+      operationId  = "GetTrackingHistory"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    tracking_current_location_get = {
+      path         = "/api/v1/tracking/{id_pedido}/current-location"
+      method       = "GET"
+      summary      = "Retorna la ultima ubicacion GPS registrada."
+      operationId  = "GetCurrentLocation"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    tracking_location_post = {
+      path         = "/api/v1/tracking/{id_pedido}/location"
+      method       = "POST"
+      summary      = "Registra una nueva coordenada GPS (llamado desde app repartidor)."
+      operationId  = "PostTrackingLocation"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+
+    # ============================================
+    # DOMINIO: ETA (Tiempo Estimado de Entrega)
+    # ============================================
+    eta_get = {
+      path         = "/api/v1/eta/{id_pedido}"
+      method       = "GET"
+      summary      = "Calcula y retorna el ETA del paquete."
+      operationId  = "GetEta"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+
+    # ============================================
+    # DOMINIO: Notifications (Notificaciones)
+    # ============================================
+    notifications_subscribe_post = {
+      path         = "/api/v1/notifications/subscribe"
+      method       = "POST"
+      summary      = "Suscribe un endpoint (email/sms/http) a un topic SNS."
+      operationId  = "PostNotificationsSubscribe"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    notifications_publish_post = {
+      path         = "/api/v1/notifications/publish"
+      method       = "POST"
+      summary      = "Publica un mensaje manualmente a un topic SNS."
+      operationId  = "PostNotificationsPublish"
+      enable_cors  = true
+      require_auth = true
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+    notifications_webhook_post = {
+      path         = "/api/v1/notifications/webhook"
+      method       = "POST"
+      summary      = "Recibe confirmaciones de suscripcion y mensajes de SNS (webhook AWS)."
+      operationId  = "PostNotificationsWebhook"
+      enable_cors  = true
+      require_auth = false  # Webhook de AWS no envía token de auth
+      lambda_arn   = ""  # Vacío = VPC_LINK (Pod EKS)
+    }
+
     # AGREGAR NUEVOS ENDPOINTS AQUÍ
     #
     # Opción 1: CORS por defecto, SIN autenticación
@@ -238,6 +344,13 @@ locals {
     )
   }
 
+  # Extraer path parameters de cada path (ej: /api/v1/packages/{id_pedido} -> ["id_pedido"])
+  path_parameters = {
+    for path in distinct([for k, v in local.endpoints : v.path]) : path => [
+      for match in regexall("\\{([^}]+)\\}", path) : match[0]
+    ]
+  }
+
   openapi_spec = {
     openapi = "3.0.1"
     info = {
@@ -248,7 +361,18 @@ locals {
 
     paths = {
       for path, methods in local.endpoints_by_path : path => merge(
-        # Métodos principales (GET, POST, PUT, DELETE)
+        # Path parameters (si existen)
+        length(local.path_parameters[path]) > 0 ? {
+          parameters = [
+            for param in local.path_parameters[path] : {
+              name     = param
+              in       = "path"
+              required = true
+              schema   = { type = "string" }
+            }
+          ]
+        } : {},
+        # Métodos principales (GET, POST, PUT, DELETE, PATCH)
         {
           for method, endpoint in methods : method => {
             summary     = endpoint.summary
@@ -463,23 +587,48 @@ locals {
 # Función helper bash para resolver resource IDs en tiempo de ejecución
 locals {
   # Script helper que obtiene todos los resource IDs del API Gateway y los cachea
+  # Usa un archivo temporal como cache para evitar llamadas repetidas a la API
   get_resource_id_helper = <<-BASH
+    RESOURCES_CACHE_FILE=""
+    cache_all_resources() {
+      local api_id="$1"
+      local region="$2"
+      RESOURCES_CACHE_FILE=$(mktemp)
+      aws apigateway get-resources \
+        --rest-api-id "$api_id" \
+        --region "$region" \
+        --limit 500 \
+        --output json > "$RESOURCES_CACHE_FILE"
+    }
     get_resource_id() {
       local api_id="$1"
       local path="$2"
       local region="$3"
+      # Si no hay cache, crear uno
+      if [ -z "$RESOURCES_CACHE_FILE" ] || [ ! -f "$RESOURCES_CACHE_FILE" ]; then
+        cache_all_resources "$api_id" "$region"
+      fi
       local resource_id
-      resource_id=$(aws apigateway get-resources \
-        --rest-api-id "$api_id" \
-        --region "$region" \
-        --query "items[?path=='$path'].id | [0]" \
-        --output text)
-      if [ -z "$resource_id" ] || [ "$resource_id" = "None" ]; then
+      resource_id=$(cat "$RESOURCES_CACHE_FILE" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data.get('items', []):
+    if item.get('path') == '$path':
+        print(item['id'])
+        sys.exit(0)
+print('NOT_FOUND')
+")
+      if [ -z "$resource_id" ] || [ "$resource_id" = "NOT_FOUND" ] || [ "$resource_id" = "None" ]; then
         echo "ERROR: No se encontró resource ID para path: $path" >&2
         return 1
       fi
       echo "$resource_id"
     }
+    cleanup_cache() {
+      [ -n "$RESOURCES_CACHE_FILE" ] && rm -f "$RESOURCES_CACHE_FILE"
+      return 0
+    }
+    trap cleanup_cache EXIT
   BASH
 }
 

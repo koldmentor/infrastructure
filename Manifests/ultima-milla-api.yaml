@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ultima-milla-api
+  namespace: grupo1a-ms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ultima-milla-api
+  template:
+    metadata:
+      labels:
+        app: ultima-milla-api
+    spec:
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: 200283853536.dkr.ecr.us-east-1.amazonaws.com/ultima-milla-api:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 5000 # Ajustar gunicorn a --bind 0.0.0.0:5000
+          env:
+            # Base de datos - MySQL en AWS RDS
+            - name: DB_HOST
+              value: "rds-mysql-grupo1a-prod.cgd20mcyuxjl.us-east-1.rds.amazonaws.com"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "DBMySQLGrupo1a"
+            - name: DB_USER
+              value: "admin_grupo1a" # Migrar a Kubernetes Secret en producción
+            - name: DB_PASSWORD
+              value: "Grupo1a_2024!" # Configurar via Kubernetes Secret - NO commitear el password
+            # AWS
+            - name: AWS_REGION
+              value: "us-east-1"
+            - name: SNS_TOPIC_PACKAGE_EVENTS
+              value: "arn:aws:sns:us-east-1:200283853536:prod-package-events"
+            - name: SNS_TOPIC_NOTIFICATIONS
+              value: "arn:aws:sns:us-east-1:200283853536:prod-notifications"
+            - name: SQS_QUEUE_PACKAGES
+              value: "https://sqs.us-east-1.amazonaws.com/200283853536/prod-packages-queue"
+            # Flask
+            - name: FLASK_ENV
+              value: "production"
+            - name: FLASK_PORT
+              value: "5000"
+            - name: LOG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+            limits:
+              memory: 1536Mi
+              cpu: 1000m
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ultima-milla-api
+  namespace: grupo1a-ms
+spec:
+  selector:
+    app: ultima-milla-api
+  ports:
+    - port: 80
+      targetPort: 5000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ultima-milla-api
+  namespace: grupo1a-ms
+  annotations:
+    alb.ingress.kubernetes.io/group.name: grupo1a-shared-alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "2"
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: ultima-milla-api
+                port:
+                  number: 80
